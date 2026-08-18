@@ -215,6 +215,13 @@ void AppearanceWidget::loadThemeSettings()
             m_ui->widgetStyleComboBox->setCurrentIndex(i);
     }
 
+    // Reskin: the application look is now fixed (see ThemeManager::applyCurrentlySelectedTheme).
+    // Keep the box populated (so nothing else here breaks) but prevent switching away from it,
+    // and hide the "open custom themes folder" entry point since custom themes are unsupported.
+    m_ui->widgetStyleComboBox->setEnabled(false);
+    m_ui->widgetStyleComboBox->setToolTip(tr("This launcher build ships a single fixed appearance."));
+    m_ui->widgetStyleFolder->hide();
+
     if (!m_themesOnly) {
         const QString currentCat = settings->get("BackgroundCat").toString();
         const auto cats = APPLICATION->themeManager()->getValidCatPacks();
