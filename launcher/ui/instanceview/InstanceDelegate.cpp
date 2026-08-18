@@ -37,6 +37,7 @@
 #include <QApplication>
 #include <QDebug>
 #include <QPainter>
+#include <QPainterPath>
 #include <QTextLayout>
 #include <QTextOption>
 #include <QtMath>
@@ -70,15 +71,39 @@ static void viewItemTextLayout(QTextLayout& textLayout, int lineWidth, qreal& he
 
 ListViewDelegate::ListViewDelegate(QObject* parent) : QStyledItemDelegate(parent) {}
 
+// Reskin: instance items are now drawn as Modrinth-style rounded cards instead of a flat
+// highlight rectangle behind icon+label. This card is drawn behind the WHOLE item (icon +
+// text), not just the text like the old textHighlightRect did.
+static const int kCardRadius = 12;
+
 void drawSelectionRect(QPainter* painter, const QStyleOptionViewItem& option, const QRect& rect)
 {
-    if ((option.state & QStyle::State_Selected))
-        painter->fillRect(rect, option.palette.brush(QPalette::Highlight));
-    else {
-        QColor backgroundColor = option.palette.color(QPalette::Window);
-        backgroundColor.setAlpha(160);
-        painter->fillRect(rect, QBrush(backgroundColor));
+    painter->save();
+    painter->setRenderHint(QPainter::Antialiasing, true);
+
+    QRectF cardRect(rect);
+    QPainterPath path;
+    path.addRoundedRect(cardRect, kCardRadius, kCardRadius);
+
+    if (option.state & QStyle::State_Selected) {
+        QColor accent = option.palette.color(QPalette::Highlight);
+        QColor fill = accent;
+        fill.setAlpha(38);
+        painter->fillPath(path, fill);
+        painter->setPen(QPen(accent, 1.5));
+        painter->drawPath(path);
+    } else {
+        QColor cardColor = option.palette.color(QPalette::AlternateBase);
+        if (option.state & QStyle::State_MouseOver)
+            cardColor = cardColor.lighter(112);
+        painter->fillPath(path, cardColor);
+        QColor borderColor = option.palette.color(QPalette::Window).lighter(140);
+        borderColor.setAlpha(90);
+        painter->setPen(QPen(borderColor, 1));
+        painter->drawPath(path);
     }
+
+    painter->restore();
 }
 
 void drawFocusRect(QPainter* painter, const QStyleOptionViewItem& option, const QRect& rect)
@@ -191,21 +216,25 @@ void ListViewDelegate::paint(QPainter* painter, const QStyleOptionViewItem& opti
     QStyle* style = opt.widget ? opt.widget->style() : QApplication::style();
 
     // const int iconSize =  style->pixelMetric(QStyle::PM_IconViewIconSize);
-    const int iconSize = 48;
+    // Reskin: bigger icon to suit the wider card (was 48).
+    const int iconSize = 56;
+    const int cardPadding = 8;
     QRect iconbox = opt.rect;
     const int textMargin = style->pixelMetric(QStyle::PM_FocusFrameHMargin, 0, opt.widget) + 1;
     QRect textRect = opt.rect;
-    QRect textHighlightRect = textRect;
-    // clip the decoration on top, remove width padding
-    textRect.adjust(textMargin, iconSize + textMargin + 5, -textMargin, 0);
+    // Reskin: the card now covers the FULL item rect (icon + text), inset by half the view's
+    // spacing so neighboring cards have a visible gap instead of touching.
+    QRect cardRect = opt.rect.adjusted(2, 2, -2, -2);
 
-    textHighlightRect.adjust(0, iconSize + 5, 0, 0);
+    // clip the decoration on top, remove width padding, and leave room for the card padding
+    textRect.adjust(textMargin, iconSize + cardPadding + textMargin + 5, -textMargin, -cardPadding);
+    iconbox.adjust(0, cardPadding, 0, 0);
 
     // draw background
     {
         // FIXME: unused
         // QSize textSize = viewItemTextSize ( &opt );
-        drawSelectionRect(painter, opt, textHighlightRect);
+        drawSelectionRect(painter, opt, cardRect);
         /*
         QPalette::ColorGroup cg;
         QStyleOptionViewItem opt2(opt);
@@ -330,11 +359,12 @@ QSize ListViewDelegate::sizeHint(const QStyleOptionViewItem& option, const QMode
 
     QStyle* style = opt.widget ? opt.widget->style() : QApplication::style();
     const int textMargin = style->pixelMetric(QStyle::PM_FocusFrameHMargin, &option, opt.widget) + 1;
-    int height = 48 + textMargin * 2 + 5;  // TODO: turn constants into variables
+    // Reskin: matches the 56px icon + 8px card padding used in paint() above.
+    int height = 56 + 8 + textMargin * 2 + 5;  // TODO: turn constants into variables
     QSize szz = viewItemTextSize(&opt);
-    height += szz.height();
+    height += szz.height() + 8;  // + bottom card padding
     // FIXME: maybe the icon items could scale and keep proportions?
-    QSize sz(100, height);
+    QSize sz(124, height);
     return sz;
 }
 
@@ -371,10 +401,10 @@ void ListViewDelegate::updateEditorGeometry(QWidget* editor,
                                             const QStyleOptionViewItem& option,
                                             [[maybe_unused]] const QModelIndex& index) const
 {
-    const int iconSize = 48;
+    const int iconSize = 56;
     QRect textRect = option.rect;
     // QStyle *style = option.widget ? option.widget->style() : QApplication::style();
-    textRect.adjust(0, iconSize + 5, 0, 0);
+    textRect.adjust(0, iconSize + 8 + 5, 0, 0);
     editor->setGeometry(textRect);
 }
 

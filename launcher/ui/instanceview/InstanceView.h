@@ -120,12 +120,15 @@ class InstanceView : public QAbstractItemView {
     visibilityFunction m_fVisibility;
 
     // geometry
-    int m_leftMargin = 5;
-    int m_rightMargin = 5;
-    int m_bottomMargin = 5;
+    // Reskin: wider spacing + wider cards so instances read as a Modrinth-style card grid
+    // rather than tightly packed icon+label items. See InstanceDelegate.cpp for the actual
+    // card painting.
+    int m_leftMargin = 12;
+    int m_rightMargin = 12;
+    int m_bottomMargin = 12;
     int m_categoryMargin = 5;
-    int m_spacing = 5;
-    int m_itemWidth = 100;
+    int m_spacing = 14;
+    int m_itemWidth = 124;
     int m_currentItemsPerRow = -1;
     int m_currentCursorColumn = -1;
     mutable QCache<int, QRect> m_geometryCache;

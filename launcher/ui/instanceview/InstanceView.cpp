@@ -72,6 +72,8 @@ InstanceView::InstanceView(QWidget* parent) : QAbstractItemView(parent)
     setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
     setAcceptDrops(true);
     setAutoScroll(true);
+    // Reskin: needed so State_MouseOver reaches the delegate and cards can light up on hover.
+    viewport()->setMouseTracking(true);
     setPaintCat(APPLICATION->settings()->get("TheCat").toBool());
     connect(verticalScrollBar(), &QScrollBar::valueChanged, viewport(), QOverload<>::of(&QWidget::update));
     connect(horizontalScrollBar(), &QScrollBar::valueChanged, viewport(), QOverload<>::of(&QWidget::update));
