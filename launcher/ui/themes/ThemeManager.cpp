@@ -272,11 +272,11 @@ void ThemeManager::applyCurrentlySelectedTheme(bool initial)
     auto settings = APPLICATION->settings();
     setIconTheme(settings->get("IconTheme").toString());
     themeDebugLog() << "<> Icon theme set.";
-    auto applicationTheme = settings->get("ApplicationTheme").toString();
-    if (applicationTheme == "") {
-        applicationTheme = m_defaultStyle;
-    }
-    setApplicationTheme(applicationTheme, initial);
+    // Reskin: the launcher now ships a single, hard-coded look (the "dark" theme id,
+    // which now contains the custom reskin QSS/palette). We intentionally ignore the
+    // stored "ApplicationTheme" setting here so the app can never fall back to a
+    // built-in Qt style or a user-installed custom theme.
+    setApplicationTheme("dark", initial);
     themeDebugLog() << "<> Application theme set.";
 }
 
